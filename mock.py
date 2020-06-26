@@ -8,9 +8,6 @@ Created on Thu Jun 11 19:49:12 2020
 
 from astropy.io import fits
 from astropy.wcs import WCS
-#from astropy import units as u
-#from photutils import aperture_photometry
-#from photutils import CircularAperture, CircularAnnulus
 from astropy.stats import sigma_clipped_stats
 from astropy.visualization import simple_norm
 import numpy as np 
@@ -19,21 +16,14 @@ from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.modeling.models import Sersic2D
 from astropy.nddata import Cutout2D
-
-#from matplotlib.colors import LogNorm
-#from astropy.table import Table
-#from photutils.datasets import (make_random_gaussians_table,
-#                                make_noise_image,
-#                                make_gaussian_sources_image)
-
 import scipy.signal
 
-galaxy_url = "https://www.dropbox.com/s/emdy928imvhs080/dark_swarp.fits?dl=0"
+galaxy = "dark_swarp.fits"
 segmentation = "dark_seg_1sig.fits"
-psfimg = "/Users/ana/Dropbox/dark_swarp_psf.fits"
+psfimg = "dark_swarp_psf.fits"
 psfhdu = fits.open(psfimg)[0]
 psf = psfhdu.data
-hdu = fits.open(galaxy_url)[0]
+hdu = fits.open(galaxy)[0]
 science = hdu.data
 hdu_seg = fits.open(segmentation)[0]
 seg = hdu_seg.data
@@ -55,15 +45,6 @@ size_ypix = hdu.header['NAXIS2']
 position = (x_obj, y_obj)
 #print(size)
 #center_coordinates = (51, 51)
-
-#science_cps = science/hdu['EXPTIME']
-# Create 2D cutout of the image and display it
-#cutout = Cutout2D(science, position, size_pix)
-plt.figure(figsize=(5,5))
-#norm_cutout = simple_norm(cutout.data, 'sqrt', percent=99.)
-#plt.xlabel("X [px]")
-#plt.ylabel("Y [px]")
-#plt.imshow(cutout.data, norm=norm_cutout, cmap = 'Greys')
 
 # We normalize the psf, just in the case it isn't
 psf_norm = psf / np.sum(psf)
@@ -107,82 +88,4 @@ for i in range(nrows*ncols):
     ax[i].imshow(log_img, cmap='Greys', aspect=1, interpolation='nearest',
                origin='upper', vmin=-1, vmax=2)
 plt.tight_layout()
-#plt.xscale("log")
-plt.savefig('sb29_conv.png', format='png',pdi=500)
-
-print('Deff='+str(10+i*40)+'"')
-hdunew = fits.PrimaryHDU(image)
-hdunew.header.update(wcs.to_header())
-hdunew.writeto('dark_swarp_dwarf.fits', overwrite=True)
-
-from astropy.modeling import models, fitting
-#ini_mod = mod(x,y)
-#fitter = fitting.LevMarLSQFitter()
-#fit_mod = fitter(ini_mod, x, y, maxiter = 1000, estimate_jacobian=False)
-
-
-ini_mod = Sersic2D(amplitude=10**(-0.4*(SBlim-SB0)/0.94),
-r_eff=(5+i*20)/0.39, n=0.6, x_0=x_obj, y_0=y_obj, ellip=0.)
-
-fitter = fitting.LevMarLSQFitter()
-goodpix = np.where(seg==0)
-fit_mod = fitter(ini_mod, x[goodpix], y[goodpix], image[goodpix], maxiter = 1000, acc=1.0e-7, epsilon=1.0e-6,
-estimate_jacobian=False)
-norm = simple_norm(image, 'sqrt', percent=95.)
-norm_ini = simple_norm(ini_mod(x,y),'sqrt', percent=99.)
-norm_fit = simple_norm(fit_mod(x,y),'sqrt', percent=99.)
-
-plt.figure(figsize=(8, 2.5))
-plt.subplot(1, 3, 1)
-plt.imshow(image,cmap='Greys', norm=norm)
-plt.title('Data')
-plt.subplot(1, 3, 2)
-plt.imshow(ini_mod(x,y),cmap='Greys', norm=norm_ini)
-plt.title('Initial guess')
-plt.subplot(1, 3, 3)
-plt.imshow(fit_mod(x,y),cmap='Greys', norm=norm_fit)
-plt.title('Best fit model')
-
-# Generate fake data
-np.random.seed(42)
-g1 = models.Gaussian1D(1, 0, 0.2)
-g2 = models.Gaussian1D(2.5, 0.5, 0.1)
-x = np.linspace(-1, 1, 200)
-y = g1(x) + g2(x) + np.random.normal(0., 0.2, x.shape)
-# Now to fit the data create a new superposition with initial
-# guesses for the parameters:
-gg_init = models.Gaussian1D(1, 0, 0.1) + models.Gaussian1D(2, 0.5, 0.1)
-fitter = fitting.SLSQPLSQFitter()
-gg_fit = fitter(gg_init, x, y)
-# Plot the data with the best-fit model
-plt.figure(figsize=(8,5))
-plt.plot(x, y, 'ko')
-plt.plot(x, gg_fit(x))
-plt.xlabel('Position')
-plt.ylabel('Flux')
-
-#vmin, vmax = np.percentile(image, [5, 80])
-#print(np.log10(vmin),np.log10(vmax))
-#plt.figure()
-#plt.imshow(log_img, cmap='Greys', aspect=1, interpolation='nearest',
-#           origin='lower', vmin=-1, vmax=2)
-#plt.xlabel('x')
-#plt.ylabel('y')
-#cbar = plt.colorbar()
-#cbar.set_label('Log Brightness', rotation=270, labelpad=25)
-#cbar.set_ticks([-1, 0, 1, 2], update_ticks=True)
-#plt.show()
-##plt.imshow(np.log10(image), origin='upper')
-
-#largehdu=fits.open("dark_swarp.fits")[0]
-#large=largehdu.data
-#ncombhdu=fits.open("dark_ncomb.fits")[0]
-#ncomb=ncombhdu.data
-
-#sigma2=(large+10000)/ncomb/1.25
-#sigma=np.sqrt(sigma2)
-
-
-#sig=fits.PrimaryHDU(sigma)
-#sig.header.update(WCS(largehdu.header).to_header())
-#sig.writeto("dark_swarp_sigma.fits",overwrite=True)
+#plt.savefig('sb29_conv.png', format='png',pdi=500)
