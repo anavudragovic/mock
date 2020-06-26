@@ -28,13 +28,12 @@ from astropy.nddata import Cutout2D
 
 import scipy.signal
 
-galaxy = "/Users/ana/Dropbox/dark_swarp.fits"
-#segmentation = "/Users/ana/Dropbox/dark_galaxy_seg_1sigma_cutout_no1.fits"
+galaxy_url = "https://www.dropbox.com/s/emdy928imvhs080/dark_swarp.fits?dl=0"
 segmentation = "dark_seg_1sig.fits"
 psfimg = "/Users/ana/Dropbox/dark_swarp_psf.fits"
 psfhdu = fits.open(psfimg)[0]
 psf = psfhdu.data
-hdu = fits.open(galaxy)[0]
+hdu = fits.open(galaxy_url)[0]
 science = hdu.data
 hdu_seg = fits.open(segmentation)[0]
 seg = hdu_seg.data
